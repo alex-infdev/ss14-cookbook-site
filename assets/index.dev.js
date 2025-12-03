@@ -1,5 +1,6 @@
 (function () {
 	'use strict';
+	const basePath = window.location.pathname.startsWith('/ss14-cookbook-site') ? '/ss14-cookbook-site' : '';
 
 	var jsxRuntime = { exports: {} };
 
@@ -40335,8 +40336,8 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 	};
 	const useFork = () => reactExports.useContext(ForkContext);
 
-	const NoticesPath = `${""}/data/notices.json`;
-	const ForkDataPath = (id, hash) => `${""}/data/data_${id}.${hash}.json`;
+	const NoticesPath = `${basePath}/data/notices.json`;
+	const ForkDataPath = (id, hash) => `${basePath}/data/data_${id}.${hash}.json`;
 	const App = (props) => {
 		const { forks } = props;
 		const [query, setQuery] = useSearchParams();
@@ -40370,7 +40371,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 				})
 				.then((data) => {
 					setData(data);
-					document.body.style.setProperty('--sprite-url', `url('${""}/img/${data.spriteSheet}')`);
+					document.body.style.setProperty('--sprite-url', `url('${basePath}/img/${data.spriteSheet}')`);
 				});
 			fetch(NoticesPath, { cache: 'reload' })
 				.then(res => res.json())
@@ -42183,7 +42184,6 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 		},
 	];
 
-	const basePath = window.location.pathname.startsWith('/ss14-cookbook-site') ? '/ss14-cookbook-site' : '';
 	const IndexPath = `${basePath}/data/index.json`;
 	const ForkListLoader = () => {
 		// This is a pretty bad implementation.
