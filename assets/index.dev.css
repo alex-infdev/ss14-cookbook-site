@@ -2572,7 +2572,7 @@ p.redirect_canonical {
   }
 
   50% {
-    background-color: var(--color-primary-transparent);
+    background-color: #ffffff;
   }
 
   100% {

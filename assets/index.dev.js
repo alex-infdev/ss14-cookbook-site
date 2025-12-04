@@ -41150,6 +41150,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 		const [order, setOrder] = reactExports.useState('default');
 		const [groupByMethod, setGroupByMethod] = reactExports.useState(true);
 		const [favsFirst, setFavsFirst] = reactExports.useState(true);
+		const [flashingRecipeId, setFlashingRecipeId] = reactExports.useState(null);
 		const isFavorite = useIsFavorite();
 		const filteredRecipes = reactExports.useMemo(() => {
 			let recipes = applyFilter(recipeList, filter, entityMap);
@@ -41202,16 +41203,18 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 			}));
 		}, []);
 		const handleRandomRecipe = reactExports.useCallback(() => {
-			if (sortedRecipes.length === 0) {
+			const candidates = applyFilter(recipeList, filter, entityMap);
+			if (candidates.length === 0) {
 				return;
 			}
-			const index = Math.floor(Math.random() * sortedRecipes.length);
-			const recipe = sortedRecipes[index];
+			const index = Math.floor(Math.random() * candidates.length);
+			const recipe = candidates[index];
 			const name = searchableRecipeNames.get(recipe.id);
 			if (name) {
 				setSearch(name);
+				setFlashingRecipeId(recipe.id);
 			}
-		}, [sortedRecipes, searchableRecipeNames]);
+		}, [recipeList, filter, entityMap, searchableRecipeNames]);
 		const extraSortItems = reactExports.useMemo(() => [
 			{
 				name: 'Group by method',
@@ -41232,6 +41235,12 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 				replace: true,
 			});
 		}, [filter]);
+		reactExports.useEffect(() => {
+			if (flashingRecipeId) {
+				const timer = setTimeout(() => setFlashingRecipeId(null), 1000);
+				return () => clearTimeout(timer);
+			}
+		}, [flashingRecipeId]);
 		const hasFilter = isFilterActive(filter);
 		return (jsxRuntimeExports.jsxs("main", {
 			hidden: !open, children: [jsxRuntimeExports.jsxs("div", {
@@ -41244,7 +41253,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 								: undefined, "aria-pressed": showFilter, "aria-expanded": showFilter, onClick: handleToggleFilter, children: [hasFilter ? jsxRuntimeExports.jsx(FilterActiveIcon, {}) : jsxRuntimeExports.jsx(FilterIcon, {}), jsxRuntimeExports.jsx("span", { children: "Filter" })]
 						})
 				}), jsxRuntimeExports.jsx(Tooltip, { placement: 'below', text: 'Clear filter', children: jsxRuntimeExports.jsx("button", { disabled: !hasFilter, onClick: handleResetFilter, children: jsxRuntimeExports.jsx(ClearFilterIcon, {}) }) }), jsxRuntimeExports.jsx(Tooltip, { placement: 'below', text: 'Random recipe', children: jsxRuntimeExports.jsx("button", { onClick: handleRandomRecipe, children: jsxRuntimeExports.jsx(DiceIcon, {}) }) }), jsxRuntimeExports.jsx(Dropdown, { icon: jsxRuntimeExports.jsx(SortIcon, {}), value: order, options: SortOptions, extraItems: extraSortItems, onChange: v => setOrder(v) }), jsxRuntimeExports.jsx(FilterEditor, { open: showFilter, filter: filter, setFilter: setFilter })]
-			}), jsxRuntimeExports.jsx(IngredientSuggestions, { search: search, filter: filter, setFilter: setFilter, clearSearch: clearSearch }), jsxRuntimeExports.jsx(ResultCount, { search: search, filter: filter, resultCount: sortedRecipes.length, totalCount: recipeList.length }), jsxRuntimeExports.jsx(RecipeVisibilityProvider, { children: jsxRuntimeExports.jsx("ul", { className: 'recipe-list', children: sortedRecipes.map(recipe => jsxRuntimeExports.jsx("li", { children: jsxRuntimeExports.jsx(Recipe, { id: recipe.id }) }, recipe.id)) }) })]
+			}), jsxRuntimeExports.jsx(IngredientSuggestions, { search: search, filter: filter, setFilter: setFilter, clearSearch: clearSearch }), jsxRuntimeExports.jsx(ResultCount, { search: search, filter: filter, resultCount: sortedRecipes.length, totalCount: recipeList.length }), jsxRuntimeExports.jsx(RecipeVisibilityProvider, { children: jsxRuntimeExports.jsx("ul", { className: 'recipe-list', children: sortedRecipes.map(recipe => jsxRuntimeExports.jsx("li", { children: jsxRuntimeExports.jsx(Recipe, { id: recipe.id, className: flashingRecipeId === recipe.id ? 'recipe--flash' : undefined }) }, recipe.id)) }) })]
 		}));
 	});
 	const ResultCount = (props) => {
