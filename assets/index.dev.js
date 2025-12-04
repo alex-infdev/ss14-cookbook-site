@@ -39633,7 +39633,6 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 	const AddToMenuButton = reactExports.memo((props) => {
 		const { id } = props;
 		const storage = useStoredMenus();
-		console.log('AddToMenuButton storage:', storage);
 		if (!storage) return null;
 		const menus = storage.getAll();
 		const { visible, popupRef, parentRef } = usePopupTrigger('bottom');
@@ -41353,11 +41352,9 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 	const Context = reactExports.createContext(null);
 	const useStoredMenus = () => {
 		const ctx = reactExports.useContext(Context);
-		console.log('useStoredMenus context:', ctx);
 		return ctx;
 	};
 	const StoredMenuProvider = reactExports.memo((props) => {
-		console.log('StoredMenuProvider rendering');
 		const { children } = props;
 		const storage = useStorage(SavedMenusKey);
 		const [menus, setMenus] = reactExports.useState(() => {
