@@ -41558,6 +41558,58 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 		}
 	};
 
+	const AddRecipeButton = reactExports.memo((props) => {
+		const { recipeId, index, totalCount, onAdd } = props;
+		const { parentRef, popupRef, visible } = usePopupTrigger('above');
+		const n = index + 1;
+		const ariaLabel = totalCount > 1
+			? `Add recipe ${n} for this ingredient to the menu`
+			: 'Add the recipe for this ingredient to the menu';
+		return jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("button", { className: 'planner_editor-ingredient-add-recipe', "aria-label": ariaLabel, onClick: () => onAdd(recipeId), ref: parentRef, children: [jsxRuntimeExports.jsx(AddIcon, {}), totalCount > 1 && jsxRuntimeExports.jsx("span", { children: n })] }), visible && reactDomExports.createPortal(jsxRuntimeExports.jsxs("div", { className: 'popup popup--recipe', ref: popupRef, children: [jsxRuntimeExports.jsx(Recipe, { id: recipeId, canFavorite: false, canExplore: false }), jsxRuntimeExports.jsx("span", { className: 'popup--tooltip', children: "Add this recipe to the menu." })] }), getPopupRoot())] });
+	});
+
+	const Ingredient = reactExports.memo((props) => {
+		const { ingredient, visible, onToggleVisible, onAddRecipe } = props;
+		const { recipeMap, entityMap, reagentMap } = useGameData();
+		const sourceOfText = reactExports.useMemo(() => {
+			if (ingredient.sourceOfReagent.size === 0) {
+				return '';
+			}
+			const reagentNames = Array.from(ingredient.sourceOfReagent, id => reagentMap.get(id).name);
+			reagentNames.sort((a, b) => NeutralCollator.compare(a, b));
+			return `Source of: ${reagentNames.join(', ')}`;
+		}, [ingredient, reagentMap]);
+		const usedByText = reactExports.useMemo(() => {
+			if (ingredient.usedBy.size === 0) {
+				return '';
+			}
+			const recipeNames = dedupe(Array.from(ingredient.usedBy, id => getRecipeName(recipeMap.get(id), entityMap, reagentMap)));
+			recipeNames.sort((a, b) => NeutralCollator.compare(a, b));
+			return `Used by: ${recipeNames.join(', ')}`;
+		}, [ingredient, recipeMap, entityMap, reagentMap]);
+		const tooltipText = `${sourceOfText}\n${usedByText}`.trim();
+		return (jsxRuntimeExports.jsxs("li", {
+			className: !visible
+				? 'planner_editor-ingredient planner_editor-ingredient--off'
+				: 'planner_editor-ingredient', children: [jsxRuntimeExports.jsx(Tooltip, { text: visible ? 'Hide this ingredient' : 'Show this ingredient', children: jsxRuntimeExports.jsx("button", { className: 'planner_editor-ingredient-toggle', "aria-label": 'Hide this ingredient', "aria-pressed": !visible, onClick: () => onToggleVisible(ingredient.id), children: visible ? jsxRuntimeExports.jsx(EyeIcon, {}) : jsxRuntimeExports.jsx(EyeOffIcon, {}) }) }), ingredient.type === 'solid'
+					? jsxRuntimeExports.jsx(EntitySprite, { id: ingredient.entityId })
+					: jsxRuntimeExports.jsx(ReagentSprite, { id: ingredient.reagentId }), jsxRuntimeExports.jsx("span", { className: 'planner_editor-ingredient-name', children: ingredientName(ingredient, entityMap, reagentMap) }), ingredient.recipes.map((id, index) => jsxRuntimeExports.jsx(AddRecipeButton, { recipeId: id, index: index, totalCount: ingredient.recipes.length, onAdd: onAddRecipe }, id)), jsxRuntimeExports.jsx(Tooltip, { text: tooltipText, children: jsxRuntimeExports.jsx("span", { className: 'planner_editor-ingredient-info', children: jsxRuntimeExports.jsx(InformationIcon, {}) }) })]
+		}));
+	});
+
+	const IngredientList = reactExports.memo((props) => {
+		const { availableIngredients, hiddenIngredients, onToggleVisible, onAddRecipe, } = props;
+		const { entityMap, reagentMap } = useGameData();
+		const sortedIngredients = reactExports.useMemo(() => {
+			return availableIngredients.slice(0).sort((a, b) => {
+				const nameA = ingredientName(a, entityMap, reagentMap);
+				const nameB = ingredientName(b, entityMap, reagentMap);
+				return NeutralCollator.compare(nameA, nameB);
+			});
+		}, [availableIngredients, entityMap, reagentMap]);
+		return jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsx("h3", { children: "Ingredients" }), sortedIngredients.length > 0 ? (jsxRuntimeExports.jsx("ul", { className: 'planner_editor-ingredient-list', children: sortedIngredients.map(ingredient => jsxRuntimeExports.jsx(Ingredient, { ingredient: ingredient, visible: !hiddenIngredients.has(ingredient.id), onToggleVisible: onToggleVisible, onAddRecipe: onAddRecipe }, ingredient.id)) })) : jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsx("p", { children: "When you add recipes to the menu, their ingredients will show up here. This list will also include ingredients used in recipes for other ingredients." }), jsxRuntimeExports.jsx("p", { children: "You can hide ingredients you don\u2019t want to see, and add their recipes (when available) to your menu." })] })] });
+	});
+
 	const MenuViewer = reactExports.memo(() => {
 		const params = useParams();
 		const id = params.id;
@@ -41565,23 +41617,70 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 		const url = useUrl();
 		const storage = useStoredMenus();
 		const menu = reactExports.useMemo(() => storage.get(id), [id]);
-		const ingredients = reactExports.useMemo(() => {
+		const availableIngredients = reactExports.useMemo(() => {
 			if (!menu) {
 				return [];
 			}
-			let ingredients = findIngredients(menu.recipes, recipeMap, recipesBySolidResult, recipesByReagentResult, reagentMap);
-			ingredients = ingredients.filter(ingredient => ingredient.type === 'solid'
-				? (menu.solidIngredients || []).includes(ingredient.entityId)
-				: (menu.reagentIngredients || []).includes(ingredient.reagentId));
-			ingredients.sort((a, b) => NeutralCollator.compare(ingredientName(a, entityMap, reagentMap), ingredientName(b, entityMap, reagentMap)));
-			return ingredients;
+			return findIngredients(menu.recipes, recipeMap, recipesBySolidResult, recipesByReagentResult, reagentMap);
 		}, [
-			menu,
+			menu?.recipes,
 			recipeMap,
 			recipesBySolidResult,
 			recipesByReagentResult,
 			reagentMap,
 		]);
+		const hiddenIngredients = reactExports.useMemo(() => new Set(availableIngredients
+			.filter(ingredient =>
+				// The ingredient is hidden if it's not included.
+				ingredient.type === 'solid'
+					? !(menu.solidIngredients || []).includes(ingredient.entityId)
+					: !(menu.reagentIngredients || []).includes(ingredient.reagentId))
+			.map(ingredient => ingredient.id)), [menu, availableIngredients]);
+
+		const handleToggleIngredient = reactExports.useCallback((id) => {
+			if (!menu) return;
+			const ingredient = availableIngredients.find(i => i.id === id);
+			if (!ingredient) return;
+
+			const isHidden = hiddenIngredients.has(id);
+			// If it's hidden, we want to show it (add to included list).
+			// If it's visible, we want to hide it (remove from included list).
+			// But wait, the logic in MenuPlanner is:
+			// "The ingredient is hidden if it's not included."
+			// So "showing" means adding to the list, "hiding" means removing.
+
+			storage.save(produce(menu, draft => {
+				if (ingredient.type === 'solid') {
+					if (!draft.solidIngredients) draft.solidIngredients = [];
+					if (isHidden) {
+						if (!draft.solidIngredients.includes(ingredient.entityId)) {
+							draft.solidIngredients.push(ingredient.entityId);
+						}
+					} else {
+						const idx = draft.solidIngredients.indexOf(ingredient.entityId);
+						if (idx !== -1) draft.solidIngredients.splice(idx, 1);
+					}
+				} else {
+					if (!draft.reagentIngredients) draft.reagentIngredients = [];
+					if (isHidden) {
+						if (!draft.reagentIngredients.includes(ingredient.reagentId)) {
+							draft.reagentIngredients.push(ingredient.reagentId);
+						}
+					} else {
+						const idx = draft.reagentIngredients.indexOf(ingredient.reagentId);
+						if (idx !== -1) draft.reagentIngredients.splice(idx, 1);
+					}
+				}
+			}));
+		}, [menu, availableIngredients, hiddenIngredients, storage]);
+
+		const handleAddRecipe = reactExports.useCallback((id) => {
+			if (!menu) return;
+			storage.save(produce(menu, draft => {
+				draft.recipes.push(id);
+			}));
+		}, [menu, storage]);
+
 		const backButton = jsxRuntimeExports.jsxs(Link, { to: url.menuList, className: 'btn floating', children: [jsxRuntimeExports.jsx(ArrowLeftIcon, {}), jsxRuntimeExports.jsx("span", { children: "Back to listing" })] });
 		if (!menu) {
 			return (jsxRuntimeExports.jsxs("div", { className: 'planner_view', children: [jsxRuntimeExports.jsx("h2", { children: "Menu not found" }), jsxRuntimeExports.jsx("div", { className: 'planner_view-actions', children: backButton })] }));
@@ -41595,15 +41694,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 						? unavailableRecipeWarning$1(unavailableRecipeCount)
 						: '']
 				})
-			})), ingredients.length > 0 && jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, {
-				children: [jsxRuntimeExports.jsx("h3", { children: "Ingredients" }), jsxRuntimeExports.jsx("ul", {
-					className: 'planner_view-ingredients', children: ingredients.map(ingredient => jsxRuntimeExports.jsxs("li", {
-						children: [ingredient.type === 'solid'
-							? jsxRuntimeExports.jsx(EntitySprite, { id: ingredient.entityId })
-							: jsxRuntimeExports.jsx(ReagentSprite, { id: ingredient.reagentId }), ingredient.recipes.length > 0 ? (jsxRuntimeExports.jsx(RecipePopup, { id: ingredient.recipes, children: jsxRuntimeExports.jsx("span", { className: 'planner_editor-ingredient-name more-info', children: ingredientName(ingredient, entityMap, reagentMap) }) })) : (jsxRuntimeExports.jsx("span", { className: 'planner_editor-ingredient-name', children: ingredientName(ingredient, entityMap, reagentMap) }))]
-					}, ingredient.id))
-				})]
-			}), jsxRuntimeExports.jsx("h3", { children: "Recipes" }), jsxRuntimeExports.jsx("ul", { className: 'recipe-list', children: menu.recipes.map(id => recipeMap.has(id) ? (jsxRuntimeExports.jsx("li", { children: jsxRuntimeExports.jsx(Recipe, { id: id, canFavorite: false }) }, id)) : null) })]
+			})), jsxRuntimeExports.jsx(IngredientList, { availableIngredients: availableIngredients, hiddenIngredients: hiddenIngredients, onToggleVisible: handleToggleIngredient, onAddRecipe: handleAddRecipe }), jsxRuntimeExports.jsx("h3", { children: "Recipes" }), jsxRuntimeExports.jsx("ul", { className: 'recipe-list', children: menu.recipes.map(id => recipeMap.has(id) ? (jsxRuntimeExports.jsx("li", { children: jsxRuntimeExports.jsx(Recipe, { id: id, canFavorite: false }) }, id)) : null) })]
 		}));
 	});
 	const unavailableRecipeWarning$1 = (count) => `${count} recipe${count > 1 ? 's are' : ' is'} unavailable.`;
@@ -41735,59 +41826,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 		};
 		return (jsxRuntimeExports.jsx("div", { className: 'planner_editor-results-wrapper', children: jsxRuntimeExports.jsxs("ul", { className: 'planner_editor-results thin-scroll', ref: listRef, children: [results.slice(0, limit).map(recipe => jsxRuntimeExports.jsx("li", { children: jsxRuntimeExports.jsx(Recipe, { id: recipe.id, canFavorite: false, headerAction: jsxRuntimeExports.jsx(RecipeAction, { id: recipe.id, onAdd: onAddRecipe }) }) }, recipe.id)), results.length > limit && (jsxRuntimeExports.jsx("li", { children: jsxRuntimeExports.jsx("button", { onClick: showMore, children: "More results..." }) })), results.length === 0 && (jsxRuntimeExports.jsxs("li", { className: 'planner_editor-no-matches', children: ["Couldn\u2019t find any new recipes with ", jsxRuntimeExports.jsx("i", { children: query }), " in the name."] }))] }) }));
 	});
-	const getLimit = (page, currentQuery) => page.query === currentQuery
-		? page.limit
-		: DefaultPage.limit;
 
-	const IngredientList = reactExports.memo((props) => {
-		const { availableIngredients, hiddenIngredients, onToggleVisible, onAddRecipe, } = props;
-		const { entityMap, reagentMap } = useGameData();
-		const sortedIngredients = reactExports.useMemo(() => {
-			return availableIngredients.slice(0).sort((a, b) => {
-				const nameA = ingredientName(a, entityMap, reagentMap);
-				const nameB = ingredientName(b, entityMap, reagentMap);
-				return NeutralCollator.compare(nameA, nameB);
-			});
-		}, [availableIngredients, entityMap, reagentMap]);
-		return jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsx("h3", { children: "Ingredients" }), sortedIngredients.length > 0 ? (jsxRuntimeExports.jsx("ul", { className: 'planner_editor-ingredient-list', children: sortedIngredients.map(ingredient => jsxRuntimeExports.jsx(Ingredient, { ingredient: ingredient, visible: !hiddenIngredients.has(ingredient.id), onToggleVisible: onToggleVisible, onAddRecipe: onAddRecipe }, ingredient.id)) })) : jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsx("p", { children: "When you add recipes to the menu, their ingredients will show up here. This list will also include ingredients used in recipes for other ingredients." }), jsxRuntimeExports.jsx("p", { children: "You can hide ingredients you don\u2019t want to see, and add their recipes (when available) to your menu." })] })] });
-	});
-	const Ingredient = reactExports.memo((props) => {
-		const { ingredient, visible, onToggleVisible, onAddRecipe } = props;
-		const { recipeMap, entityMap, reagentMap } = useGameData();
-		const sourceOfText = reactExports.useMemo(() => {
-			if (ingredient.sourceOfReagent.size === 0) {
-				return '';
-			}
-			const reagentNames = Array.from(ingredient.sourceOfReagent, id => reagentMap.get(id).name);
-			reagentNames.sort((a, b) => NeutralCollator.compare(a, b));
-			return `Source of: ${reagentNames.join(', ')}`;
-		}, [ingredient, reagentMap]);
-		const usedByText = reactExports.useMemo(() => {
-			if (ingredient.usedBy.size === 0) {
-				return '';
-			}
-			const recipeNames = dedupe(Array.from(ingredient.usedBy, id => getRecipeName(recipeMap.get(id), entityMap, reagentMap)));
-			recipeNames.sort((a, b) => NeutralCollator.compare(a, b));
-			return `Used by: ${recipeNames.join(', ')}`;
-		}, [ingredient, recipeMap, entityMap, reagentMap]);
-		const tooltipText = `${sourceOfText}\n${usedByText}`.trim();
-		return (jsxRuntimeExports.jsxs("li", {
-			className: !visible
-				? 'planner_editor-ingredient planner_editor-ingredient--off'
-				: 'planner_editor-ingredient', children: [jsxRuntimeExports.jsx(Tooltip, { text: visible ? 'Hide this ingredient' : 'Show this ingredient', children: jsxRuntimeExports.jsx("button", { className: 'planner_editor-ingredient-toggle', "aria-label": 'Hide this ingredient', "aria-pressed": !visible, onClick: () => onToggleVisible(ingredient.id), children: visible ? jsxRuntimeExports.jsx(EyeIcon, {}) : jsxRuntimeExports.jsx(EyeOffIcon, {}) }) }), ingredient.type === 'solid'
-					? jsxRuntimeExports.jsx(EntitySprite, { id: ingredient.entityId })
-					: jsxRuntimeExports.jsx(ReagentSprite, { id: ingredient.reagentId }), jsxRuntimeExports.jsx("span", { className: 'planner_editor-ingredient-name', children: ingredientName(ingredient, entityMap, reagentMap) }), ingredient.recipes.map((id, index) => jsxRuntimeExports.jsx(AddRecipeButton, { recipeId: id, index: index, totalCount: ingredient.recipes.length, onAdd: onAddRecipe }, id)), jsxRuntimeExports.jsx(Tooltip, { text: tooltipText, children: jsxRuntimeExports.jsx("span", { className: 'planner_editor-ingredient-info', children: jsxRuntimeExports.jsx(InformationIcon, {}) }) })]
-		}));
-	});
-	const AddRecipeButton = reactExports.memo((props) => {
-		const { recipeId, index, totalCount, onAdd } = props;
-		const { parentRef, popupRef, visible } = usePopupTrigger('above');
-		const n = index + 1;
-		const ariaLabel = totalCount > 1
-			? `Add recipe ${n} for this ingredient to the menu`
-			: 'Add the recipe for this ingredient to the menu';
-		return jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsxs("button", { className: 'planner_editor-ingredient-add-recipe', "aria-label": ariaLabel, onClick: () => onAdd(recipeId), ref: parentRef, children: [jsxRuntimeExports.jsx(AddIcon, {}), totalCount > 1 && jsxRuntimeExports.jsx("span", { children: n })] }), visible && reactDomExports.createPortal(jsxRuntimeExports.jsxs("div", { className: 'popup popup--recipe', ref: popupRef, children: [jsxRuntimeExports.jsx(Recipe, { id: recipeId, canFavorite: false, canExplore: false }), jsxRuntimeExports.jsx("span", { className: 'popup--tooltip', children: "Add this recipe to the menu." })] }), getPopupRoot())] });
-	});
 
 	const DiscardChangesDialog = (props) => {
 		const { onStay, onSave, onDiscard } = props;
