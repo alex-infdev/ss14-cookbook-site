@@ -39630,8 +39630,25 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 		return context;
 	};
 
+	const AddToMenuButton = reactExports.memo((props) => {
+		const { id } = props;
+		const storage = useStoredMenus();
+		const menus = storage.getAll();
+		const { visible, popupRef, parentRef } = usePopupTrigger('bottom');
+		const handleAdd = (menu) => {
+			const newMenu = produce(menu, draft => {
+				draft.recipes.push(id);
+			});
+			storage.save(newMenu);
+		};
+		if (menus.length === 0) {
+			return null;
+		}
+		return (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsx(Tooltip, { text: 'Add to menu', provideLabel: true, children: jsxRuntimeExports.jsx("button", { ref: parentRef, onClick: () => { }, children: jsxRuntimeExports.jsx(AddIcon, {}) }) }), visible && reactDomExports.createPortal(jsxRuntimeExports.jsxs("div", { className: 'popup popup--menu-select', ref: popupRef, children: [jsxRuntimeExports.jsx("p", { children: "Add to menu:" }), jsxRuntimeExports.jsx("ul", { className: 'popup_list', children: menus.map(menu => jsxRuntimeExports.jsx("li", { children: jsxRuntimeExports.jsx("button", { onClick: () => handleAdd(menu), children: menu.name }) }, menu.id)) })] }), getPopupRoot())] }));
+	});
+
 	const Recipe = reactExports.memo((props) => {
-		const { className, id, canFavorite = true, canExplore = true, headerAction, skipDefaultHeaderAction, } = props;
+		const { className, id, canFavorite = true, canExplore = true, canAddToMenu = true, headerAction, skipDefaultHeaderAction, } = props;
 		const { recipeMap, entityMap } = useGameData();
 		const recipe = recipeMap.get(id);
 		const isFav = useIsFavorite()(id);
@@ -39648,7 +39665,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 		// a header action is a single icon button too.
 		// The amount of stuff on the left is therefore 1 (for the icon) + 1 if
 		// there is a header action.
-		// On the right, it's 1 if canFavorite + 1 if canExplore.
+		// On the right, it's 1 if canFavorite + 1 if canExplore + 1 if canAddToMenu.
 		// The balanceBias is left - right. If <0, we insert a spacer on the left;
 		// if >0, spacer on the right.
 		const balanceBias =
@@ -39656,10 +39673,10 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 			(1 + +!!effectiveHeaderAction)
 			-
 			// right
-			(+!!canFavorite + +!!canExplore);
+			(+!!canFavorite + +!!canExplore + +!!canAddToMenu);
 		const title = reactExports.useMemo(() => {
-			return jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsx(RecipeTraits, { recipe: recipe }), effectiveHeaderAction, balanceBias < 0 && jsxRuntimeExports.jsx("span", { className: 'recipe_spacer' }), jsxRuntimeExports.jsx(RecipeResult, { recipe: recipe }), balanceBias > 0 && jsxRuntimeExports.jsx("span", { className: 'recipe_spacer' }), canFavorite && jsxRuntimeExports.jsx(FavoriteButton, { id: id }), canExplore && jsxRuntimeExports.jsx(ExploreButton, { id: id })] });
-		}, [headerAction, balanceBias, canFavorite, canExplore, recipe]);
+			return jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsx(RecipeTraits, { recipe: recipe }), effectiveHeaderAction, balanceBias < 0 && jsxRuntimeExports.jsx("span", { className: 'recipe_spacer' }), jsxRuntimeExports.jsx(RecipeResult, { recipe: recipe }), balanceBias > 0 && jsxRuntimeExports.jsx("span", { className: 'recipe_spacer' }), canFavorite && jsxRuntimeExports.jsx(FavoriteButton, { id: id }), canExplore && jsxRuntimeExports.jsx(ExploreButton, { id: id }), canAddToMenu && jsxRuntimeExports.jsx(AddToMenuButton, { id: id })] });
+		}, [headerAction, balanceBias, canFavorite, canExplore, canAddToMenu, recipe]);
 		let fullClassName = 'recipe';
 		if (isFav && canFavorite) {
 			fullClassName += ` recipe--fav`;
