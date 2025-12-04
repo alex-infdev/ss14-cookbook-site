@@ -2565,21 +2565,3 @@ p.redirect_canonical {
   flex-direction: column;
   gap: 8px;
 }
-
-@keyframes recipe-flash {
-  0% {
-    background-color: var(--color-bg-3);
-  }
-
-  50% {
-    background-color: #ffffff;
-  }
-
-  100% {
-    background-color: var(--color-bg-3);
-  }
-}
-
-.recipe--flash {
-  animation: recipe-flash 1s ease-out;
-}
