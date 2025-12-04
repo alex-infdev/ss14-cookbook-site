@@ -39737,7 +39737,9 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 						id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
 						name: name,
 						recipes: [id],
-						ingredients: []
+						ingredients: [],
+						solidIngredients: [],
+						reagentIngredients: []
 					};
 					storage.save(newMenu);
 				}
