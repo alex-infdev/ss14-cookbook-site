@@ -41571,8 +41571,8 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 			}
 			let ingredients = findIngredients(menu.recipes, recipeMap, recipesBySolidResult, recipesByReagentResult, reagentMap);
 			ingredients = ingredients.filter(ingredient => ingredient.type === 'solid'
-				? menu.solidIngredients.includes(ingredient.entityId)
-				: menu.reagentIngredients.includes(ingredient.reagentId));
+				? (menu.solidIngredients || []).includes(ingredient.entityId)
+				: (menu.reagentIngredients || []).includes(ingredient.reagentId));
 			ingredients.sort((a, b) => NeutralCollator.compare(ingredientName(a, entityMap, reagentMap), ingredientName(b, entityMap, reagentMap)));
 			return ingredients;
 		}, [
