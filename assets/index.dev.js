@@ -39630,22 +39630,152 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 		return context;
 	};
 
+	const isNotSeparator = (item) => !item.separator;
+	const tryAdjustIndex = (index, delta, items) => {
+		let nextIndex = index + delta;
+		for (; ;) {
+			if (nextIndex === -1 || nextIndex === items.length) {
+				break;
+			}
+			if (!items[nextIndex].separator) {
+				return nextIndex;
+			}
+			nextIndex += delta;
+		}
+		// No change
+		return index;
+	};
+
+	const DropdownList = reactExports.memo((props) => {
+		const { className, initialIndex, items, onClose, } = props;
+		const [index, setIndex] = reactExports.useState(initialIndex);
+		const ref = reactExports.useRef(null);
+		reactExports.useEffect(() => {
+			ref.current?.focus();
+		}, []);
+		const handleKeyDown = reactExports.useCallback((e) => {
+			switch (e.code) {
+				case 'ArrowUp':
+					e.preventDefault();
+					setIndex(tryAdjustIndex(index, -1, items));
+					break;
+				case 'ArrowDown':
+					e.preventDefault();
+					setIndex(tryAdjustIndex(index, 1, items));
+					break;
+				case 'Home':
+				case 'PageUp': {
+					e.preventDefault();
+					const firstIndex = items.findIndex(isNotSeparator);
+					setIndex(firstIndex);
+					break;
+				}
+				case 'End':
+				case 'PageDown': {
+					e.preventDefault();
+					const lastIndex = items.findLastIndex(isNotSeparator);
+					setIndex(lastIndex);
+					break;
+				}
+				case 'Escape':
+					e.preventDefault();
+					onClose();
+					break;
+				case 'Space':
+				case 'Enter':
+					e.preventDefault();
+					const item = items[index];
+					if (!item.separator) {
+						item.activate(onClose);
+					}
+					break;
+			}
+		}, [index, items, onClose]);
+		const hasCheckedItem = items.some(x => !x.separator && x.checked != null);
+		let realClassName = hasCheckedItem
+			? `dropdown_list dropdown_list--icon`
+			: 'dropdown_list';
+		if (className) {
+			realClassName = `${realClassName} ${className}`;
+		}
+		return (jsxRuntimeExports.jsx(FocusTrap, {
+			onPointerDownOutside: onClose, children: jsxRuntimeExports.jsx("div", {
+				className: realClassName, role: 'menu', tabIndex: 0, onKeyDown: handleKeyDown, ref: ref, children: items.map((item, i) => item.separator ? (jsxRuntimeExports.jsx("div", { className: 'dropdown_sep' }, i)) : (jsxRuntimeExports.jsxs("div", {
+					className: i === index
+						? 'dropdown_item dropdown_item--current'
+						: 'dropdown_item', onMouseEnter: () => setIndex(i), onClick: () => item.activate(onClose), children: [item.checked != null && (jsxRuntimeExports.jsx("span", {
+							className: 'dropdown_icon', children: jsxRuntimeExports.jsx("span", {
+								className: item.checked
+									? 'checkbox_marker checkbox_marker--checked'
+									: 'checkbox_marker'
+							})
+						})), jsxRuntimeExports.jsx("span", { className: 'dropdown_item-name', children: item.name }), item.description != null && (jsxRuntimeExports.jsx("span", { className: 'dropdown_item-desc', children: item.description }))]
+				}, i)))
+			})
+		}));
+	});
+
 	const AddToMenuButton = reactExports.memo((props) => {
 		const { id } = props;
 		const storage = useStoredMenus();
 		if (!storage) return null;
 		const menus = storage.getAll();
-		const { visible, popupRef, parentRef } = usePopupTrigger('bottom');
+
+		const [open, setOpen] = reactExports.useState(false);
+		const parentRef = reactExports.useRef(null);
+
 		const handleAdd = (menu) => {
-			const newMenu = produce(menu, draft => {
-				draft.recipes.push(id);
-			});
-			storage.save(newMenu);
+			if (menu) {
+				storage.save(produce(menu, draft => {
+					draft.recipes.push(id);
+				}));
+			} else {
+				// New menu
+				const name = prompt("Enter name for new menu:");
+				if (name) {
+					const newMenu = {
+						id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+						name: name,
+						recipes: [id],
+						ingredients: []
+					};
+					storage.save(newMenu);
+				}
+			}
+			setOpen(false);
 		};
-		if (menus.length === 0) {
-			return null;
-		}
-		return (jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [jsxRuntimeExports.jsx(Tooltip, { text: 'Add to menu', provideLabel: true, children: jsxRuntimeExports.jsx("button", { ref: parentRef, onClick: () => { }, children: jsxRuntimeExports.jsx(AddIcon, {}) }) }), visible && reactDomExports.createPortal(jsxRuntimeExports.jsxs("div", { className: 'popup popup--menu-select', ref: popupRef, children: [jsxRuntimeExports.jsx("p", { children: "Add to menu:" }), jsxRuntimeExports.jsx("ul", { className: 'popup_list', children: menus.map(menu => jsxRuntimeExports.jsx("li", { children: jsxRuntimeExports.jsx("button", { onClick: () => handleAdd(menu), children: menu.name }) }, menu.id)) })] }), getPopupRoot())] }));
+
+		const items = menus.map(menu => ({
+			name: menu.name,
+			activate: () => handleAdd(menu)
+		}));
+
+		items.push({ separator: true });
+		items.push({
+			name: "New menu...",
+			activate: () => handleAdd(null)
+		});
+
+		return (jsxRuntimeExports.jsxs("div", {
+			className: open ? 'dropdown dropdown--open' : 'dropdown', ref: parentRef, children: [
+				jsxRuntimeExports.jsx(Tooltip, {
+					text: 'Add to menu', children:
+						jsxRuntimeExports.jsx("button", {
+							className: 'fav',
+							"aria-label": 'Add to menu',
+							"aria-haspopup": 'menu',
+							"aria-expanded": open,
+							onClick: () => setOpen(!open),
+							children: jsxRuntimeExports.jsx(AddIcon, {})
+						})
+				}),
+				open && (jsxRuntimeExports.jsx(DropdownList, {
+					initialIndex: 0,
+					items: items,
+					onClose: () => setOpen(false)
+				}))
+			]
+		}));
 	});
 
 	const Recipe = reactExports.memo((props) => {
@@ -40435,89 +40565,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 		return `${year}-${month}-${day} at ${hour}:${minute}:${second}`;
 	};
 
-	const DropdownList = reactExports.memo((props) => {
-		const { className, initialIndex, items, onClose, } = props;
-		const [index, setIndex] = reactExports.useState(initialIndex);
-		const ref = reactExports.useRef(null);
-		reactExports.useEffect(() => {
-			ref.current?.focus();
-		}, []);
-		const handleKeyDown = reactExports.useCallback((e) => {
-			switch (e.code) {
-				case 'ArrowUp':
-					e.preventDefault();
-					setIndex(tryAdjustIndex(index, -1, items));
-					break;
-				case 'ArrowDown':
-					e.preventDefault();
-					setIndex(tryAdjustIndex(index, 1, items));
-					break;
-				case 'Home':
-				case 'PageUp': {
-					e.preventDefault();
-					const firstIndex = items.findIndex(isNotSeparator);
-					setIndex(firstIndex);
-					break;
-				}
-				case 'End':
-				case 'PageDown': {
-					e.preventDefault();
-					const lastIndex = items.findLastIndex(isNotSeparator);
-					setIndex(lastIndex);
-					break;
-				}
-				case 'Escape':
-					e.preventDefault();
-					onClose();
-					break;
-				case 'Space':
-				case 'Enter':
-					e.preventDefault();
-					const item = items[index];
-					if (!item.separator) {
-						item.activate(onClose);
-					}
-					break;
-			}
-		}, [index, items, onClose]);
-		const hasCheckedItem = items.some(x => !x.separator && x.checked != null);
-		let realClassName = hasCheckedItem
-			? `dropdown_list dropdown_list--icon`
-			: 'dropdown_list';
-		if (className) {
-			realClassName = `${realClassName} ${className}`;
-		}
-		return (jsxRuntimeExports.jsx(FocusTrap, {
-			onPointerDownOutside: onClose, children: jsxRuntimeExports.jsx("div", {
-				className: realClassName, role: 'menu', tabIndex: 0, onKeyDown: handleKeyDown, ref: ref, children: items.map((item, i) => item.separator ? (jsxRuntimeExports.jsx("div", { className: 'dropdown_sep' }, i)) : (jsxRuntimeExports.jsxs("div", {
-					className: i === index
-						? 'dropdown_item dropdown_item--current'
-						: 'dropdown_item', onMouseEnter: () => setIndex(i), onClick: () => item.activate(onClose), children: [item.checked != null && (jsxRuntimeExports.jsx("span", {
-							className: 'dropdown_icon', children: jsxRuntimeExports.jsx("span", {
-								className: item.checked
-									? 'checkbox_marker checkbox_marker--checked'
-									: 'checkbox_marker'
-							})
-						})), jsxRuntimeExports.jsx("span", { className: 'dropdown_item-name', children: item.name }), item.description != null && (jsxRuntimeExports.jsx("span", { className: 'dropdown_item-desc', children: item.description }))]
-				}, i)))
-			})
-		}));
-	});
-	const isNotSeparator = (item) => !item.separator;
-	const tryAdjustIndex = (index, delta, items) => {
-		let nextIndex = index + delta;
-		for (; ;) {
-			if (nextIndex === -1 || nextIndex === items.length) {
-				break;
-			}
-			if (!items[nextIndex].separator) {
-				return nextIndex;
-			}
-			nextIndex += delta;
-		}
-		// No change
-		return index;
-	};
+
 
 	const Dropdown = (props) => {
 		const { className, icon, value, options, prefix, extraItems, onChange, } = props;
