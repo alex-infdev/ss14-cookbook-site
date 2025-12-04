@@ -41207,13 +41207,11 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 			}
 			const index = Math.floor(Math.random() * sortedRecipes.length);
 			const recipe = sortedRecipes[index];
-			const element = document.querySelector(`[data-recipe-id="${recipe.id}"]`);
-			if (element) {
-				element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-				element.classList.add('recipe--flash');
-				setTimeout(() => element.classList.remove('recipe--flash'), 1000);
+			const name = searchableRecipeNames.get(recipe.id);
+			if (name) {
+				setSearch(name);
 			}
-		}, [sortedRecipes]);
+		}, [sortedRecipes, searchableRecipeNames]);
 		const extraSortItems = reactExports.useMemo(() => [
 			{
 				name: 'Group by method',
