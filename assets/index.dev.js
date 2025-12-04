@@ -38202,6 +38202,9 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
   M19 20A2 2 0 0021 18 6 6 0 0015 12 6 6 0 009 18C9 18.73 8.81 19.41 8.46 20H19
   M11 2 11 6 8 6 12 10 16 6 13 6 13 2Z
 `);
+	const DiceIcon = icon(`
+  M5,3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5A2,2 0 0,1 3,19V5A2,2 0 0,1 5,3M7,5A2,2 0 0,0 5,7A2,2 0 0,0 7,9A2,2 0 0,0 9,7A2,2 0 0,0 7,5M17,15A2,2 0 0,0 15,17A2,2 0 0,0 17,19A2,2 0 0,0 19,17A2,2 0 0,0 17,15M17,5A2,2 0 0,0 15,7A2,2 0 0,0 17,9A2,2 0 0,0 19,7A2,2 0 0,0 17,5M7,15A2,2 0 0,0 5,17A2,2 0 0,0 7,19A2,2 0 0,0 9,17A2,2 0 0,0 7,15M12,10A2,2 0 0,0 10,12A2,2 0 0,0 12,14A2,2 0 0,0 14,12A2,2 0 0,0 12,10Z
+`);
 	const SettingsIcon = icon(`
   M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5
   M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z
@@ -41198,6 +41201,19 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 				ingredientMode: filter.ingredientMode,
 			}));
 		}, []);
+		const handleRandomRecipe = reactExports.useCallback(() => {
+			if (sortedRecipes.length === 0) {
+				return;
+			}
+			const index = Math.floor(Math.random() * sortedRecipes.length);
+			const recipe = sortedRecipes[index];
+			const element = document.querySelector(`[data-recipe-id="${recipe.id}"]`);
+			if (element) {
+				element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				element.classList.add('recipe--flash');
+				setTimeout(() => element.classList.remove('recipe--flash'), 1000);
+			}
+		}, [sortedRecipes]);
 		const extraSortItems = reactExports.useMemo(() => [
 			{
 				name: 'Group by method',
@@ -41229,7 +41245,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 								? 'recipe-search_filter-toggle--active'
 								: undefined, "aria-pressed": showFilter, "aria-expanded": showFilter, onClick: handleToggleFilter, children: [hasFilter ? jsxRuntimeExports.jsx(FilterActiveIcon, {}) : jsxRuntimeExports.jsx(FilterIcon, {}), jsxRuntimeExports.jsx("span", { children: "Filter" })]
 						})
-				}), jsxRuntimeExports.jsx(Tooltip, { placement: 'below', text: 'Clear filter', children: jsxRuntimeExports.jsx("button", { disabled: !hasFilter, onClick: handleResetFilter, children: jsxRuntimeExports.jsx(ClearFilterIcon, {}) }) }), jsxRuntimeExports.jsx(Dropdown, { icon: jsxRuntimeExports.jsx(SortIcon, {}), value: order, options: SortOptions, extraItems: extraSortItems, onChange: v => setOrder(v) }), jsxRuntimeExports.jsx(FilterEditor, { open: showFilter, filter: filter, setFilter: setFilter })]
+				}), jsxRuntimeExports.jsx(Tooltip, { placement: 'below', text: 'Clear filter', children: jsxRuntimeExports.jsx("button", { disabled: !hasFilter, onClick: handleResetFilter, children: jsxRuntimeExports.jsx(ClearFilterIcon, {}) }) }), jsxRuntimeExports.jsx(Tooltip, { placement: 'below', text: 'Random recipe', children: jsxRuntimeExports.jsx("button", { onClick: handleRandomRecipe, children: jsxRuntimeExports.jsx(DiceIcon, {}) }) }), jsxRuntimeExports.jsx(Dropdown, { icon: jsxRuntimeExports.jsx(SortIcon, {}), value: order, options: SortOptions, extraItems: extraSortItems, onChange: v => setOrder(v) }), jsxRuntimeExports.jsx(FilterEditor, { open: showFilter, filter: filter, setFilter: setFilter })]
 			}), jsxRuntimeExports.jsx(IngredientSuggestions, { search: search, filter: filter, setFilter: setFilter, clearSearch: clearSearch }), jsxRuntimeExports.jsx(ResultCount, { search: search, filter: filter, resultCount: sortedRecipes.length, totalCount: recipeList.length }), jsxRuntimeExports.jsx(RecipeVisibilityProvider, { children: jsxRuntimeExports.jsx("ul", { className: 'recipe-list', children: sortedRecipes.map(recipe => jsxRuntimeExports.jsx("li", { children: jsxRuntimeExports.jsx(Recipe, { id: recipe.id }) }, recipe.id)) }) })]
 		}));
 	});
