@@ -1800,6 +1800,30 @@ select:focus {
   flex-shrink: 0;
 }
 
+.planner_view-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.planner_view-col {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.planner_view-col h3 {
+  margin-top: 0 !important;
+}
+
+@media (min-width: 850px) {
+  .planner_view-grid {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 32px;
+  }
+}
+
 .planner_view-ingredients {
   display: grid;
   grid-template-columns: 1fr;

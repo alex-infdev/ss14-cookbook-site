@@ -38142,6 +38142,9 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
   M13,17V15H11V17H13
   M13,13V7H11V13H13Z
 `);
+	const CheckIcon = icon(`
+  M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z
+`);
 	const SaveIcon = icon(`
   M15,9H5V5H15
   M12,19A3,3 0 0,1 9,16A3,3 0 0,1 12,13A3,3 0 0,1 15,16A3,3 0 0,1 12,19
@@ -41744,7 +41747,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 						? unavailableRecipeWarning$1(unavailableRecipeCount)
 						: '']
 				})
-			})), jsxRuntimeExports.jsx(IngredientList, { availableIngredients: availableIngredients, hiddenIngredients: isEditingIngredients ? new Set() : hiddenIngredients, onToggleVisible: handleToggleIngredient, readOnly: !isEditingIngredients }), jsxRuntimeExports.jsx("h3", { children: "Recipes" }), jsxRuntimeExports.jsx("ul", { className: 'recipe-list', children: filteredRecipes.map(id => recipeMap.has(id) ? (jsxRuntimeExports.jsx("li", { id: `recipe-${id}`, children: jsxRuntimeExports.jsx(Recipe, { id: id, canFavorite: false, className: flashingRecipeId === id ? 'recipe--flash' : undefined }) }, id)) : null) })]
+			})), jsxRuntimeExports.jsxs("div", { className: 'planner_view-grid', children: [jsxRuntimeExports.jsx("div", { className: 'planner_view-col', children: jsxRuntimeExports.jsx(IngredientList, { availableIngredients: availableIngredients, hiddenIngredients: isEditingIngredients ? new Set() : hiddenIngredients, onToggleVisible: handleToggleIngredient, readOnly: !isEditingIngredients }) }), jsxRuntimeExports.jsxs("div", { className: 'planner_view-col', children: [jsxRuntimeExports.jsx("h3", { children: "Recipes" }), jsxRuntimeExports.jsx("ul", { className: 'recipe-list', children: filteredRecipes.map(id => recipeMap.has(id) ? (jsxRuntimeExports.jsx("li", { id: `recipe-${id}`, children: jsxRuntimeExports.jsx(Recipe, { id: id, canFavorite: false, className: flashingRecipeId === id ? 'recipe--flash' : undefined }) }, id)) : null) })] })] })]
 		}));
 	});
 	const unavailableRecipeWarning$1 = (count) => `${count} recipe${count > 1 ? 's are' : ' is'} unavailable.`;
